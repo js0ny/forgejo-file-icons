@@ -2,7 +2,7 @@
 
 File-type icons for Forgejo's repository file browser. Replaces the default monochrome octicons with colored SVG icons based on file extension and filename.
 
-![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-MIT%20%2B%20Apache%202.0-blue.svg)
 
 ## What it does
 
@@ -84,4 +84,13 @@ Place the SVG in `icons/` and rebuild with `bash build.sh`.
 
 ## License
 
-MIT. SVG icons are sourced from MIT-licensed VS Code extension repos.
+Build scripts and CSS are MIT-licensed. SVG icons are redistributed from upstream projects under their own licenses:
+
+| Source | License |
+|--------|---------|
+| [vscode-great-icons](https://github.com/EmmanuelBeziat/vscode-great-icons) | MIT |
+| [vscode-material-icon-theme](https://github.com/material-extensions/vscode-material-icon-theme) | MIT |
+| [Material Design Icons](https://pictogrammers.com/library/mdi/) (Pictogrammers) | Apache 2.0 |
+| [Material Symbols](https://fonts.google.com/icons) (Google) | Apache 2.0 |
+
+See [NOTICE](NOTICE) for full attribution and license texts.

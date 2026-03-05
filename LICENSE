@@ -22,6 +22,6 @@ SOFTWARE.
 
 ---
 
-SVG icons are sourced from:
-  - vscode-great-icons (MIT) — https://github.com/EmmanuelBeziat/vscode-great-icons
-  - vscode-material-icon-theme (MIT) — https://github.com/material-extensions/vscode-material-icon-theme
+This project's build scripts and CSS are MIT-licensed (above). The SVG icon
+files in icons/ are redistributed from upstream projects under their respective
+licenses. See NOTICE for details.
