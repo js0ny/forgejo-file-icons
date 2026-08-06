@@ -33,7 +33,7 @@ echo "==> Generating icons and CSS..."
 mkdir -p "$ICONS_DIR"
 
 # Let Python do the heavy lifting: parse icons.json, copy SVGs, generate CSS
-python "$SCRIPT_DIR/build-icons.py" \
+python3 "$SCRIPT_DIR/build-icons.py" \
     --great-json "$GREAT_JSON" \
     --great-icons "$GREAT_ICONS" \
     --material-icons "$MATERIAL_ICONS" \

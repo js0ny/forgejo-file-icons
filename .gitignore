@@ -2,3 +2,6 @@
 *.swp
 .idea/
 templates/custom/
+result
+result-*
+.direnv/

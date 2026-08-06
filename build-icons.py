@@ -31,12 +31,31 @@ ICON_ALIASES = {
     "react_alt": ["react_alt", "react-alt"],
 }
 
+# Filenames upstream's icons.json has no entry for, despite the SVGs shipping in
+# vscode-material-icon-theme. Without these the most common files in any repo
+# (README.md above all) fall through to the generic document icon.
+EXTRA_FILE_NAMES = {
+    "readme": "readme",
+    "readme.md": "readme",
+    "readme.rst": "readme",
+    "readme.txt": "readme",
+    "readme.adoc": "readme",
+    "changelog": "changelog",
+    "changelog.md": "changelog",
+    "changes.md": "changelog",
+    "history.md": "changelog",
+    "contributing": "contributing",
+    "contributing.md": "contributing",
+    "authors": "authors",
+    "authors.md": "authors",
+    "todo": "todo",
+    "todo.md": "todo",
+}
+
 
 def find_svg_with_aliases(icon_name: str, great_dir: str, material_dir: str) -> str | None:
     """Try the icon name and known aliases."""
-    names = ICON_ALIASES.get(icon_name, [icon_name])
-    if isinstance(names, str):
-        names = [names]
+    names = list(ICON_ALIASES.get(icon_name, [icon_name]))
     if icon_name not in names:
         names.insert(0, icon_name)
     for name in names:
@@ -59,7 +78,7 @@ def main():
         data = json.load(f)
 
     file_extensions = data.get("fileExtensions", {})
-    file_names = data.get("fileNames", {})
+    file_names = {**data.get("fileNames", {}), **EXTRA_FILE_NAMES}
 
     # -------------------------------------------------------------------------
     # 1. Collect all icons referenced and copy SVGs
@@ -94,19 +113,27 @@ def main():
     # -------------------------------------------------------------------------
     # 2. Build extension → icon_name mapping, grouped by icon
     # -------------------------------------------------------------------------
-    # Group extensions by their icon name for compact CSS
-    icon_to_exts: dict[str, list[str]] = defaultdict(list)
+    missing_set = set(missing)
+
+    def suffix_of(ext: str) -> str:
+        return ext if ext.startswith(".") else f".{ext}"
+
+    # Every rule below has identical specificity (0,3,1), so the cascade is decided
+    # purely by document order. Bucket extensions by suffix length: if one suffix
+    # ends with another (".blade.php" vs ".php") the longer is the more specific
+    # match, so it must be emitted later to win.
+    len_to_icon_exts: dict[int, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
     for ext, icon in sorted(file_extensions.items()):
         icon_name = icon.replace("_f_", "")
-        # Skip if no SVG available
-        if icon_name in missing:
+        if icon_name in missing_set:
             continue
-        icon_to_exts[icon_name].append(ext)
+        suffix = suffix_of(ext)
+        len_to_icon_exts[len(suffix)][icon_name].append(suffix)
 
     icon_to_names: dict[str, list[str]] = defaultdict(list)
     for name, icon in sorted(file_names.items()):
         icon_name = icon.replace("_f_", "")
-        if icon_name in missing:
+        if icon_name in missing_set:
             continue
         icon_to_names[icon_name].append(name)
 
@@ -126,84 +153,59 @@ def main():
     w(" */")
     w("")
 
-    # Base rule
-    w("/* Base ::before dimensions */")
-    w("tr.entry[data-entryname] td.name a::before {")
-    w("    content: '';")
-    w("    display: none;")
-    w("    width: 16px;")
-    w("    min-width: 16px;")
-    w("    height: 16px;")
-    w("    margin-right: 8px;")
-    w("    vertical-align: -3px;")
-    w("    background-size: contain;")
-    w("    background-repeat: no-repeat;")
-    w("    background-position: center;")
-    w("}")
-    w("")
-    w("/* Hide all default octicon icons in file tree */")
+    # The octicon <svg> keeps its box and alignment; only its paths are blanked so
+    # the background image shows through. Swapping it for a pseudo-element instead
+    # would mean re-deriving Forgejo's sizing and baseline by hand.
+    w("/* Base: hide original SVG paths, align, and prepare for background swap */")
     w("tr.entry[data-entryname] .octicon-file,")
     w("tr.entry[data-entryname] .octicon-file-directory-fill,")
-    w("tr.entry[data-entryname] .octicon-file-submodule { display: none; }")
+    w("tr.entry[data-entryname] .octicon-file-submodule {")
+    w("    fill: transparent;")
+    w("    vertical-align: -1.5px;")
+    w("    background: center/contain no-repeat;")
+    w("}")
     w("")
     w("/* Default file icon */")
-    w("tr.entry[data-entryname] td.name a::before {")
-    w("    display: inline-block;")
+    w("tr.entry[data-entryname] .octicon-file {")
     w("    background-image: url('/assets/icons/document.svg');")
     w("}")
     w("")
     w("/* Default folder icon */")
-    w("tr.entry[data-entryname] td.name a:has(.octicon-file-directory-fill)::before,")
-    w("tr.entry[data-entryname] td.name a:has(.octicon-file-submodule)::before {")
+    w("tr.entry[data-entryname] .octicon-file-directory-fill,")
+    w("tr.entry[data-entryname] .octicon-file-submodule {")
     w("    background-image: url('/assets/icons/folder.svg');")
     w("}")
-
     w("")
 
-    def ext_selector(ext: str) -> str:
-        """Build a CSS attribute selector for a file extension."""
-        # Extensions that start with a dot are literal suffixes
-        if ext.startswith("."):
-            return f'tr.entry[data-entryname$="{ext}"]'
-        # Check if it contains a dot (compound extension like blade.php, test.js)
-        if "." in ext:
-            return f'tr.entry[data-entryname$=".{ext}"]'
-        # Simple extension
-        return f'tr.entry[data-entryname$=".{ext}"]'
+    def css_string(value: str) -> str:
+        return value.replace("\\", "\\\\").replace('"', '\\"')
+
+    # The trailing `i` matches case-insensitively: upstream's mapping is all
+    # lowercase, but the files on disk are Dockerfile, Makefile, LICENSE, README.md.
+    def ext_selector(suffix: str) -> str:
+        return f'tr.entry[data-entryname$="{css_string(suffix)}" i]'
 
     def name_selector(name: str) -> str:
-        """Build a CSS attribute selector for an exact filename."""
-        return f'tr.entry[data-entryname="{name}"]'
+        return f'tr.entry[data-entryname="{css_string(name)}" i]'
 
-    # Emit rules grouped by icon
-    for icon_name in sorted(set(list(icon_to_exts.keys()) + list(icon_to_names.keys()))):
-        exts = icon_to_exts.get(icon_name, [])
-        names = icon_to_names.get(icon_name, [])
-        if not exts and not names:
-            continue
-
-        # Build selector lists
-        hide_selectors = []
-        show_selectors = []
-
-        for ext in exts:
-            sel = ext_selector(ext)
-            hide_selectors.append(f"{sel} .octicon-file")
-            show_selectors.append(f"{sel} td.name a::before")
-
-        for n in names:
-            sel = name_selector(n)
-            hide_selectors.append(f"{sel} .octicon-file")
-            show_selectors.append(f"{sel} td.name a::before")
-
-        # Write hide rule
+    def emit(icon_name: str, selectors: list[str]) -> None:
         w(f"/* {icon_name} */")
-        w(",\n".join(hide_selectors) + " { display: none; }")
-
-        # Write show rule
-        w(",\n".join(show_selectors) +
-          f" {{ display: inline-block; background-image: url('/assets/icons/{icon_name}.svg'); }}")
+        w(
+            ",\n".join(f"{sel} .octicon-file" for sel in selectors)
+            + f" {{ background-image: url('/assets/icons/{icon_name}.svg'); }}"
+        )
         w("")
+
+    for length in sorted(len_to_icon_exts):
+        for icon_name in sorted(len_to_icon_exts[length]):
+            emit(icon_name, [ext_selector(s) for s in len_to_icon_exts[length][icon_name]])
+
+    # Exact filenames last: an entry named docker-compose.yml must beat the generic
+    # .yml suffix rule, and identical specificity means last-one-wins.
+    w("/* ---- Exact filenames (override extension rules above) ---- */")
+    w("")
+    for icon_name in sorted(icon_to_names):
+        emit(icon_name, [name_selector(n) for n in icon_to_names[icon_name]])
 
     # Write output
     css_content = "\n".join(lines)
@@ -211,9 +213,10 @@ def main():
         f.write(css_content)
 
     # Stats
-    total_exts = sum(len(v) for v in icon_to_exts.values())
+    ext_icons = {icon for group in len_to_icon_exts.values() for icon in group}
+    total_exts = sum(len(v) for group in len_to_icon_exts.values() for v in group.values())
     total_names = sum(len(v) for v in icon_to_names.values())
-    total_icons = len(set(list(icon_to_exts.keys()) + list(icon_to_names.keys())))
+    total_icons = len(ext_icons | set(icon_to_names))
     print(f"  Generated CSS: {total_icons} icons, {total_exts} extensions, {total_names} named files")
 
 
