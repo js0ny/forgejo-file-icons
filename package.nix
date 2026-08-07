@@ -6,7 +6,7 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "forgejo-file-icons";
-  version = "0-unstable-2026-03-05";
+  version = "0-unstable-2026-08-07";
 
   src = lib.fileset.toSource {
     root = ./.;
@@ -46,7 +46,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   meta = {
     description = "File-type icons for Forgejo's repository file browser";
-    homepage = "https://git.cathedral.gg/Ben/forgejo-file-icons";
+    homepage = "https://github.com/js0ny/forgejo-file-icons";
     # Build scripts and CSS are MIT; redistributed SVGs are MIT and Apache 2.0.
     license = with lib.licenses; [
       mit

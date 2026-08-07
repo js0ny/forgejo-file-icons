@@ -4,6 +4,9 @@ File-type icons for Forgejo's repository file browser. Replaces the default mono
 
 ![License](https://img.shields.io/badge/license-MIT%20%2B%20Apache%202.0-blue.svg)
 
+> [!NOTE]
+> This is a [fork](https://git.cathedral.gg/Ben/forgejo-file-icons) with some bugfix and nixos packaging.
+
 ## What it does
 
 Uses CSS attribute selectors on Forgejo's `data-entryname` attributes to swap file/folder icons with language-specific SVGs from [vscode-great-icons](https://github.com/EmmanuelBeziat/vscode-great-icons) and [vscode-material-icon-theme](https://github.com/material-extensions/vscode-material-icon-theme).
@@ -47,7 +50,7 @@ mirror Forgejo's custom dir) and `nixosModules.default`, which symlinks both int
 
 ```nix
 {
-  inputs.forgejo-file-icons.url = "git+https://git.cathedral.gg/Ben/forgejo-file-icons";
+  inputs.forgejo-file-icons.url = "github:js0ny/forgejo-file-icons";
 
   outputs = { nixpkgs, forgejo-file-icons, ... }: {
     nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
@@ -62,13 +65,6 @@ mirror Forgejo's custom dir) and `nixosModules.default`, which symlinks both int
   };
 }
 ```
-
-`nixos-rebuild switch` applies the tmpfiles rules and restarts Forgejo (templates are
-parsed once at startup outside dev mode). Nothing is copied into the state directory —
-both paths are `L+` symlinks into the store, so they are replaced on every generation
-and disappear cleanly when the module is disabled.
-
-Set `services.forgejo-file-icons.package` to override the build.
 
 
 
