@@ -7,6 +7,8 @@ File-type icons for Forgejo's repository file browser. Replaces the default mono
 > [!NOTE]
 > This is a [fork](https://git.cathedral.gg/Ben/forgejo-file-icons) with some bugfix and nixos packaging.
 
+![Preview](./assets/preview.png)
+
 ## What it does
 
 Uses CSS attribute selectors on Forgejo's `data-entryname` attributes to swap file/folder icons with language-specific SVGs from [vscode-great-icons](https://github.com/EmmanuelBeziat/vscode-great-icons) and [vscode-material-icon-theme](https://github.com/material-extensions/vscode-material-icon-theme).
